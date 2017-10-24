@@ -2,12 +2,12 @@
 # coding: utf-8
 
 # # Authorship detection with the author-topic model
-# 
+#
 # Links:  <br />
 # [Gensim](https://radimrehurek.com/gensim/index.html)  <br />
 # [Gensim author-topic model help page](https://radimrehurek.com/gensim/models/atmodel.html)  <br />
 # [Gensim author-topic model tutorial](https://github.com/RaRe-Technologies/gensim/blob/develop/docs/notebooks/atmodel_tutorial.ipynb)
-# 
+#
 # Relevant papers:  <br />
 # [Blei et al. 2003](http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)  (LDA) <br />
 # [Rosen-Zvi et al. 2004](https://mimno.infosci.cornell.edu/info6150/readings/398.pdf) (Author-topic models) <br />
@@ -18,7 +18,7 @@
 # ![alt text](http://img.blog.csdn.net/20170417124825166?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbGFmZWVkZmg=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
 
 # Plan for this presentation:
-# 
+#
 # - Read in Reddit data
 # - Preprocessing
 # - Get a document to author dictionary
@@ -32,7 +32,7 @@
 # - Compare results to SVM
 
 # ## Reading in the reddit data
-# 
+#
 # The reddit data consists of .json files for each month, which are compressed as .bz2. First, we find all the .bz2 files in a folder.
 
 # In[2]:
@@ -42,20 +42,20 @@ import pandas as pd
 
 # In[3]:
 
-import bz2
-import glob
-files = glob.glob("data/*.bz2")
-files
+#import bz2
+#import glob
+#files = glob.glob("data/*.bz2")
+#files
 
 
 # For the purposes of this tutorial, we only use one. The file is read in, and the .json file it contains is directly transformed into a pandas data frame.
 
 # In[ ]:
 
-with bz2.open(files[0], 'rt') as f:
-    text = f.read()
-    
-df = pd.read_json(text,  lines=True)
+#with bz2.open(files[0], 'rt') as f:
+#    text = f.read()
+
+#df = pd.read_json(text,  lines=True)
 
 
 # Due to the size of the data, this can take a lot of time and RAM. Consequently we save the data as .csv file, which can be re-loaded more easily.
@@ -63,13 +63,13 @@ df = pd.read_json(text,  lines=True)
 # In[7]:
 
 #write to csv
-df.to_csv('data/reddit2010-06.csv')
+#df.to_csv('data/reddit2010-06.csv')
 
 
 # In[3]:
 
 #load data
-df = pd.read_csv('data/reddit2010-06.csv')
+#df = pd.read_csv('data/reddit2010-06.csv')
 #Note: this raises a warning, but setting low_memory=False as recommended crashes Jupyter
 
 
@@ -78,16 +78,16 @@ df = pd.read_csv('data/reddit2010-06.csv')
 # In[4]:
 
 #need only author body and subreddit variables
-df = df[['author', 'body', 'subreddit']]
+#df = df[['author', 'body', 'subreddit']]
 
 #restrict to gaming subreddit
-df = df[df['subreddit']=='gaming']
+#df = df[df['subreddit']=='gaming']
 
 #retain only posts with more than 300 characters
-df = df[df['body'].apply(len, )>300]
+#df = df[df['body'].apply(len, )>300]
 
 #remove [deleted] authors
-df = df[df['author']!='[deleted]']
+#df = df[df['author']!='[deleted]']
 
 
 # Authors who only have one post can't be predicted, so we will remove them from the dataset.
@@ -95,37 +95,37 @@ df = df[df['author']!='[deleted]']
 # In[5]:
 
 #count the number of posts per author (like table() in R)
-author_counts = df.author.value_counts()
+#author_counts = df.author.value_counts()
 
 #remove authors who only posted once
-authors = author_counts[author_counts!=1]
+#authors = author_counts[author_counts!=1]
 
 #get the axis labels (i.e. the author names) and turn them into a list
-authors = authors.axes[0].tolist()
+#authors = authors.axes[0].tolist()
 
 #subset the dataframe
-df = df[df['author'].isin(authors)]
+#df = df[df['author'].isin(authors)]
 
 
 # In[6]:
 
-df.shape
+#df.shape
 
 
 # In[7]:
 
-df.head()
+#df.head()
 
 
 # In[8]:
 
 #save (and possibly load) the data again, small enough to fit on GitHub
-df.to_csv('data/reddit2010-06_subset.csv')
+#df.to_csv('data/reddit2010-06_subset.csv')
 df = pd.read_csv('data/reddit2010-06_subset.csv')
 
 
 # ## Preprocessing
-# 
+#
 # This section is basically just a copy of the [Gensim tutorial](https://github.com/RaRe-Technologies/gensim/blob/develop/docs/notebooks/atmodel_tutorial.ipynb), with some minor modification to fit data as a pandas dataframe instead of the format used by the author.
 
 # In[8]:
@@ -136,10 +136,10 @@ nlp = spacy.load('en')
 
 # In[9]:
 
-docs = []    
+docs = []
 for doc in nlp.pipe(df['body'], n_threads=11, batch_size=100):
     # Process document using Spacy NLP pipeline.
-    
+
     ents = doc.ents  # Named entities.
 
     # Keep only words (no numbers, no punctuation).
@@ -151,7 +151,7 @@ for doc in nlp.pipe(df['body'], n_threads=11, batch_size=100):
 
     # Add named entities, but only if they are a compound of more than word.
     doc.extend([str(entity) for entity in ents if len(entity) > 1])
-    
+
     docs.append(doc)
 
 
@@ -259,9 +259,9 @@ author2doc_test
 
 
 # Again, the author-topic model, but this time with randomly selected names anonymized.
-# 
+#
 # Parameters:
-# 
+#
 # **num_topics**: The number of topics ion the model. There is no 'correct' value here, and it depends entirely on how many different topics occur in the corpus. 100 is generally a reasonable compromise for a corpus this size.  <br />
 # **chunksize**: Controls the size of the mini-batches. This depends entirely on the corpus - 2000 is the default, but this obviously makes no sense if a corpus only contains 1000 documents. <br />
 # **passes**: 100 by default <br />
@@ -273,14 +273,15 @@ author2doc_test
 
 #get_ipython().run_cell_magic('time', '', 'model = AuthorTopicModel(corpus=corpus, num_topics=100, id2word=dictionary.id2token, \\\n                    author2doc=author2doc_test, chunksize=100, passes=100, gamma_threshold=0.001, \\\n                    eval_every=0, iterations=1, random_state=1)')
 
+print('Training...')
 model = AuthorTopicModel(corpus=corpus, num_topics=100, id2word=dictionary.id2token, \
                     author2doc=author2doc_test, chunksize=100, passes=100, gamma_threshold=0.001, \
                     eval_every=0, iterations=1, random_state=1)
 
 # In[24]:
 
-# Save model. 
-model.save('./results/model_presentation.atmodel')
+# Save model.
+model.save('./results/model_presentation_github.atmodel')
 
 
 # In[18]:
@@ -292,7 +293,7 @@ model.save('./results/model_presentation.atmodel')
 #from gensim.models import AuthorTopicModel
 
 #Load model
-model = AuthorTopicModel.load('./results/model_presentation.atmodel')
+model = AuthorTopicModel.load('./results/model_presentation_github.atmodel')
 
 
 # ### Results
@@ -303,17 +304,17 @@ model.top_topics(corpus)
 
 
 # ## Authorship attribution
-# 
+#
 # ### Hellinger Distance
-# 
+#
 # $$
 # D(\theta_1, \theta_2) = \frac{1}{\sqrt{2}} \sqrt{\sum_{t=1}^T (\sqrt{\theta_{1,t}} - \sqrt{\theta_{2,t}})^2}
 # $$
-# 
+#
 # where  <br />
 # $\theta_i$ is a T-dimensional multinomial topic distribution  <br />
 # $\theta_{i,t}$ is the probability of the t-th topic
-# 
+#
 # Predict authors by making a 'fake' author for the test documents, and then compare that author's topic distribution to those of the real authors via the Hellinger Distance:
 
 # In[26]:
@@ -346,9 +347,9 @@ def get_bestmatch(name, top_n=10, smallest_author=1):
     '''
     Get table with similarities, author names, and author sizes.
     Return `top_n` authors as a dataframe.
-    
+
     '''
-    
+
     # Get similarities.
     sims = get_sims(model.get_author_topics(name))
 
@@ -360,26 +361,26 @@ def get_bestmatch(name, top_n=10, smallest_author=1):
         author_size = len(model.author2doc[author_name])
         if author_size >= smallest_author:
             table.append((author_name, sim, author_size))
-    
-    
+
+
     #turn similarities table int pd dataframe
     df2 = pd.DataFrame(table, columns=['Author', 'Score', 'Size'])
     #remove the test authors
     df2 = df2[df2['Author'].str.contains("test_id_")==False]
     #sort and get the top 10 predictions
-    df2 = df2.sort_values('Score', ascending=False)[:top_n]   
-    
+    df2 = df2.sort_values('Score', ascending=False)[:top_n]
+
     bestmatch = df2.Author.iloc[0]
-    
+
     return bestmatch
 
 def get_table(name, top_n=10, smallest_author=1):
     '''
     Get table with similarities, author names, and author sizes.
     Return `top_n` authors as a dataframe.
-    
+
     '''
-    
+
     # Get similarities.
     sims = get_sims(model.get_author_topics(name))
 
@@ -391,10 +392,10 @@ def get_table(name, top_n=10, smallest_author=1):
         author_size = len(model.author2doc[author_name])
         if author_size >= smallest_author:
             table.append((author_name, sim, author_size))
-            
+
     df2 = pd.DataFrame(table, columns=['Author', 'Score', 'Size'])
     df2 = df2.sort_values('Score', ascending=False)[:top_n]
-    
+
     return df2
 
 
@@ -425,7 +426,7 @@ actual = pd.Series(list(doc2author.values()))[sample_indices]
 
 # In[32]:
 
-sum(pred==actual)/len(pred==actual)
+print(sum(pred==actual)/len(pred==actual))
 
 
 # :(  <br /> <br />
